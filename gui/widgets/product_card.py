@@ -1,4 +1,4 @@
-from gui import StatsWindow
+from gui.windows.stats_window import StatsWindow
 from PyQt6.QtWidgets import (QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QSpinBox, QFrame)
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap, QDesktopServices

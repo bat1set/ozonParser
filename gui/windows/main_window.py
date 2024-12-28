@@ -1,4 +1,6 @@
-from gui import PriceTrackerWorker, ProductCard
+from gui.workers.price_tracker import PriceTrackerWorker
+from gui.widgets.product_card import ProductCard
+
 from moduls.ParserJson import *
 from PyQt6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout,
                            QHBoxLayout, QPushButton, QLineEdit, QLabel,
@@ -56,7 +58,7 @@ class MainWindow(QMainWindow):
         self.products_layout.addWidget(loading_label)
 
         # Запускаем получение данных в отдельном потоке
-        self.worker = PriceTrackerWorker(url, self.product_func)
+        self.worker = PriceTrackerWorker(url)
         self.worker.finished.connect(
             lambda result: self.on_product_loaded(result, loading_label, url)
         )
