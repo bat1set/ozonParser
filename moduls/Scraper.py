@@ -93,3 +93,4 @@ class OzonPriceScraper:
             self.driver.quit()
 
         return details
+
