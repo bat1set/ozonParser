@@ -4,6 +4,7 @@ import subprocess
 import venv
 import platform
 
+
 class VirtualEnvManager:
     def __init__(self, mod='default', libs=None, name_venv='.venv'):
         if libs is None:
