@@ -24,11 +24,11 @@ class OzonPriceScraper:
     def get_product_details(self) -> Dict[str, str]:
         """Извлекает название товара, цены: основную, без Ozon Карты и без скидки."""
         details = {
-            "product_name": "Не найден",
-            "product_image": "Не найдено",
-            "main_price": "Не найден",
-            "without_card_price": "Не найден",
-            "without_discount_price": "Не найден",
+            "name": "Не найден",
+            "image": "Не найдено",
+            "price_card_ozon": "Не найден",
+            "price_discount": "Не найден",
+            "price": "Не найден",
         }
         try:
             logger.info(f"Открытие страницы: {self.url}")
@@ -37,8 +37,8 @@ class OzonPriceScraper:
             # Извлечение названия товара
             try:
                 product_name_element = self._wait_for_element(By.CSS_SELECTOR, "div[data-widget='webProductHeading'] h1.l4u_27")
-                details["product_name"] = product_name_element.text.strip()
-                logger.info(f"Название товара: {details['product_name']}")
+                details["name"] = product_name_element.text.strip()
+                logger.info(f"Название товара: {details['name']}")
             except Exception:
                 logger.warning("Название товара не найдено.")
 
@@ -48,10 +48,10 @@ class OzonPriceScraper:
                 for element in gallery_elements:
                     src = element.get_attribute("src")
                     if "video" not in src:
-                        details["product_image"] = src
+                        details["image"] = src
                         logger.info(f"Ссылка на изображение товара: {details['product_image']}")
                         break
-                if details["product_image"] == "Не найдено":
+                if details["image"] == "Не найдено":
                     logger.warning("Изображение товара не найдено.")
             except Exception:
                 logger.warning("Галерея изображений не найдена.")
@@ -59,24 +59,24 @@ class OzonPriceScraper:
             # Основная цена
             try:
                 main_price_element = self._wait_for_element(By.CSS_SELECTOR, "span.tl3_27")
-                details["main_price"] = main_price_element.text.strip()
-                logger.info(f"Основная цена: {details['main_price']}")
+                details["price_card_ozon"] = main_price_element.text.strip()
+                logger.info(f"Основная цена: {details['price_card_ozon']}")
             except Exception:
                 logger.warning("Основная цена не найдена.")
 
             # Цена без Ozon Карты
             try:
                 without_card_element = self.driver.find_element(By.CSS_SELECTOR, "span.l8t_27.tl8_27.u1l_27")
-                details["without_card_price"] = without_card_element.text.strip()
-                logger.info(f"Цена без Ozon Карты: {details['without_card_price']}")
+                details["price_discount"] = without_card_element.text.strip()
+                logger.info(f"Цена без Ozon Карты: {details['price_discount']}")
             except Exception:
                 logger.warning("Цена без Ozon Карты не найдена.")
 
             # Цена без скидки
             try:
                 without_discount_element = self.driver.find_element(By.CSS_SELECTOR, "span.t7l_27.t8l_27.t6l_27.lt8_27")
-                details["without_discount_price"] = without_discount_element.text.strip()
-                logger.info(f"Цена без скидки: {details['without_discount_price']}")
+                details["price"] = without_discount_element.text.strip()
+                logger.info(f"Цена без скидки: {details['price']}")
             except Exception:
                 logger.warning("Цена без скидки не найдена.")
 
