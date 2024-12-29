@@ -1,4 +1,3 @@
-
 from moduls.utils import *
 from moduls.ParserJson import *
 from moduls.Driver import SeleniumDriver
