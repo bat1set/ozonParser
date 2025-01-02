@@ -60,12 +60,14 @@ def main():
 
 if __name__ == "__main__":
     try:
+
         main()
     except ImportError:
         # Создание виртуального окружения
         VirtualEnvManager(
             mod='default',
             libs=[
+                'Flask',
                 'selenium',
                 'webdriver-manager',
                 'fake-useragent',

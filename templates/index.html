@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="main-content">
+    {% if not products %}
+    <div class="input-board">
+        <h2>Добавьте свой первый товар</h2>
+        <div class="input-group">
+            <input type="text" id="product-url" placeholder="Введите URL товара с Ozon">
+            <button onclick="addProduct()">Добавить товар</button>
+        </div>
+    </div>
+    {% else %}
+    <div class="controls">
+        <button onclick="showAddProduct()">Добавить товар</button>
+        <button onclick="updateAllProducts()">Обновить все товары</button>
+        <button onclick="toggleDeleteMode()">Удалить товары</button>
+        <button onclick="viewAllStats()">Общая статистика</button>
+    </div>
+    
+    <div id="add-product-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-modal" onclick="hideAddProduct()">&times;</span>
+            <h2>Добавить новый товар</h2>
+            <div class="input-group">
+                <input type="text" id="product-url" placeholder="Введите URL товара с Ozon">
+                <button onclick="addProduct()">Добавить</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="products-grid">
+        {% for name, details in products.items() %}
+        <div class="product-card" data-name="{{ name }}" onclick="productClick(event, '{{ name }}')">
+            {% if details.image != "Не найдено" %}
+            <img src="{{ details.image }}" alt="{{ name }}">
+            {% else %}
+            <div class="no-image">Нет изображения</div>
+            {% endif %}
+            <h3>{{ name }}</h3>
+            <div class="price-info">
+                <p>Ozon Card: {{ details.price_card_ozon }}₽</p>
+                <p>Со скидкой: {{ details.price_discount }}₽</p>
+                <p>Обычная: {{ details.price }}₽</p>
+            </div>
+            <div class="delete-checkbox hidden">
+                <input type="checkbox" class="product-checkbox">
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div id="delete-controls" class="hidden">
+        <button onclick="deleteSelectedProducts()">Удалить выбранные</button>
+        <button onclick="cancelDelete()">Отмена</button>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

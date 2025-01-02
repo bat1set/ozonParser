@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="product-details">
+    <div class="loading-overlay hidden">
+        <div class="loader"></div>
+        <p>Обновление данных...</p>
+    </div>
+    
+    <div class="product-header">
+        <h1>{{ name }}</h1>
+        <div class="actions">
+            <button onclick="updateProduct('{{ name }}')">Обновить данные</button>
+            <button onclick="showPriceHistory('{{ name }}')">История цен</button>
+        </div>
+    </div>
+    
+    <div class="product-info">
+        {% if product.image != "Не найдено" %}
+        <img src="{{ product.image }}" alt="{{ name }}" class="product-image">
+        {% endif %}
+        
+        <div class="price-details">
+            <div class="price-item">
+                <h3>Цена с Ozon Card</h3>
+                <p>{{ product.price_card_ozon }}₽</p>
+                <span class="price-change {% if changes.card > 0 %}price-up{% elif changes.card < 0 %}price-down{% endif %}">
+                    {{ "%.2f"|format(changes.card) }}%
+                </span>
+            </div>
+            
+            <div class="price-item">
+                <h3>Цена со скидкой</h3>
+                <p>{{ product.price_discount }}₽</p>
+                <span class="price-change {% if changes.discount > 0 %}price-up{% elif changes.discount < 0 %}price-down{% endif %}">
+                    {{ "%.2f"|format(changes.discount) }}%
+                </span>
+            </div>
+            
+            <div class="price-item">
+                <h3>Обычная цена</h3>
+                <p>{{ product.price }}₽</p>
+                <span class="price-change {% if changes.regular > 0 %}price-up{% elif changes.regular < 0 %}price-down{% endif %}">
+                    {{ "%.2f"|format(changes.regular) }}%
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <div id="price-history-modal" class="modal hidden">
+        <div class="modal-content large-modal">
+            <span class="close-modal" onclick="hidePriceHistory()">&times;</span>
+            <h2>История цен</h2>
+            <div id="price-history-graph">
+                <div class="loader"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
