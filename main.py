@@ -1,16 +1,12 @@
 from moduls.utils import *
+from moduls.ParserJson import *
 from moduls.Driver import SeleniumDriver
 from moduls.Scraper import OzonPriceScraper
-from moduls.VirtualEnvManager import VirtualEnvManager
 from selenium.webdriver.edge.options import Options
-from PyQt6.QtWidgets import QApplication
-import sys
+from moduls.VirtualEnvManager import VirtualEnvManager
 
-# Импорты GUI компонентов
-from gui.windows.main_window import MainWindow
 
 def product(url):
-    """Функция для получения информации о товаре с сайта"""
     # Настройка опций для драйвера
     options = Options()
     options.add_argument("--headless")
@@ -27,27 +23,55 @@ def product(url):
 
     return scraper.get_product_details()
 
-def main():
-    # Создание виртуального окружения
-    VirtualEnvManager(
-        mod='default',
-        libs=[
-            'selenium',
-            'webdriver-manager',
-            'fake-useragent',
-            'PyQt6',
-            'pyqtgraph',
-            'requests'
-        ]
-    )
+
+def update():
+    url = "https://ozon.ru/t/MnM2Ekp"
+    product_details = product(url)
     clear()
 
-    # Запуск GUI приложения
-    app = QApplication(sys.argv)
-    app.setStyle('Fusion')
-    window = MainWindow()
-    window.show()
-    sys.exit(app.exec())
+    for key, value in product_details.items():
+        print(f"{key}: {value}")
+
+    # Обработка и запись данных
+    main_data_path = 'data_Json/main_data.json'
+    price_data_path = 'data_Json/price_for_all_dates.json'
+
+    # Форматируем данные для записи
+    formatted_data = {
+        product_details['name']: {
+            'image': product_details['image'],
+            'price_card_ozon': product_details['price_card_ozon'].replace(' ', '').replace('₽', '').strip(),
+            'price_discount': product_details['price_discount'].replace(' ', '').replace('₽', '').strip(),
+            'price': product_details['price'].replace(' ', '').replace('₽', '').strip()
+        }
+    }
+
+    # Обрабатываем изменения и записываем в файлы
+    process_changes(formatted_data, main_data_path, price_data_path)
+
+
+def main():
+
+    json_parser = read_json("data_Json/price_for_all_dates.json")
+
+    if input("Обновить данные? (y/n): ").lower() == "y":
+        update()
+
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except ImportError:
+        # Создание виртуального окружения
+        VirtualEnvManager(
+            mod='default',
+            libs=[
+                'Flask',
+                'selenium',
+                'webdriver-manager',
+                'fake-useragent',
+                'matplotlib',
+                'requests'
+            ]
+        )
+        clear()

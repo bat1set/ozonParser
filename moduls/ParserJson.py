@@ -1,63 +1,60 @@
+import datetime
 import json
-from datetime import datetime
+import os
 
 
-class JsonParser:
-    def __init__(self):
-        self.main_data_path = 'data_Json/main_data.json'
-        self.price_history_path = 'data_Json/price_for_all_dates.json'
-
-    def read_json(self, file_path):
-        """Чтение JSON файла"""
+# Функция для чтения данных из файла с обработкой ошибок
+def read_json(file_path):
+    if os.path.exists(file_path):
         try:
             with open(file_path, 'r', encoding='utf-8') as file:
                 return json.load(file)
-        except FileNotFoundError:
+        except json.JSONDecodeError:
+            print(f"Ошибка: Невозможно декодировать JSON в файле {file_path}. Файл пуст или поврежден.")
             return {}
+    return {}
 
-    def write_json(self, data, file_path):
-        """Запись в JSON файл"""
-        with open(file_path, 'w', encoding='utf-8') as file:
-            json.dump(data, file, ensure_ascii=False, indent=2)
 
-    def update_product_data(self, product_data):
-        """Обновление данных о товаре"""
-        # Чтение существующих данных
-        main_data = self.read_json(self.main_data_path)
-        price_history = self.read_json(self.price_history_path)
+# Функция для записи данных в файл
+def write_json(file_path, data):
+    with open(file_path, 'w', encoding='utf-8') as file:
+        json.dump(data, file, ensure_ascii=False, indent=2)
 
-        product_name = product_data['name']
 
-        # Обновление основных данных
-        main_data[product_name] = {
-            'image': product_data['image'],
-            'price_card_ozon': product_data['price_card_ozon'].replace(' ', '').replace('₽', '').strip(),
-            'price_discount': product_data['price_discount'].replace(' ', '').replace('₽', '').strip(),
-            'price': product_data['price'].replace(' ', '').replace('₽', '').strip()
-        }
+# Функция для обработки изменений и записи их в оба файла
+def process_changes(new_data, main_data_path, price_data_path):
+    # Чтение текущих данных
+    main_data = read_json(main_data_path)
+    price_data = read_json(price_data_path)
 
-        # Обновление истории цен
-        current_time = datetime.now().strftime("%d.%m.%Y %H:%M:%S")
-        if product_name not in price_history:
-            price_history[product_name] = {}
+    # Получаем текущую дату и время
+    today_datetime = datetime.datetime.now().strftime('%d.%m.%Y %H:%M:%S')
 
-        price_history[product_name][current_time] = {
-            'price_card_ozon': main_data[product_name]['price_card_ozon'],
-            'price_discount': main_data[product_name]['price_discount'],
-            'price': main_data[product_name]['price']
-        }
+    # Обрабатываем данные и ищем изменения
+    for key, new_values in new_data.items():
+        if key in main_data:
+            # Если данные изменились, добавляем новые данные в price_for_all_dates
+            old_values = main_data[key]
+            if new_values != old_values:
+                # Добавляем новую запись с временем
+                price_data.setdefault(key, {})
+                price_data[key][today_datetime] = {
+                    "price_card_ozon": old_values['price_card_ozon'],
+                    "price_discount": old_values['price_discount'],
+                    "price": old_values['price']
+                }
+                # Обновляем main_data новым значением
+                main_data[key] = new_values
+        else:
+            # Если данных еще нет в main_data, добавляем новые данные
+            main_data[key] = new_values
+            price_data.setdefault(key, {})
+            price_data[key][today_datetime] = {
+                "price_card_ozon": new_values['price_card_ozon'],
+                "price_discount": new_values['price_discount'],
+                "price": new_values['price']
+            }
 
-        # Сохранение обновленных данных
-        self.write_json(main_data, self.main_data_path)
-        self.write_json(price_history, self.price_history_path)
-
-        return main_data[product_name]
-
-    def get_product_history(self, product_name):
-        """Получение истории цен товара"""
-        price_history = self.read_json(self.price_history_path)
-        return price_history.get(product_name, {})
-
-    def get_all_products(self):
-        """Получение всех отслеживаемых товаров"""
-        return self.read_json(self.main_data_path)
+    # Записываем обновленные данные в файлы
+    write_json(main_data_path, main_data)
+    write_json(price_data_path, price_data)

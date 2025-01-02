@@ -41,4 +41,3 @@ class SeleniumDriver(IWebDriver):
 
     def get_page_source(self) -> str:
         return self.driver.page_source
-
