@@ -173,3 +173,64 @@ function productClick(event, name) {
         window.location.href = `/product/${encodeURIComponent(name)}`;
     }
 }
+
+function viewAllStats() {
+    const modal = document.createElement('div');
+    modal.className = 'modal show';
+    modal.innerHTML = `
+        <div class="modal-content large-modal">
+            <span class="close-modal" onclick="this.closest('.modal').remove()">&times;</span>
+            <h2>Общая статистика</h2>
+            <div id="stats-content">
+                <div class="loader"></div>
+            </div>
+            <div id="stats-graphs"></div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    fetch('/statistics')
+        .then(response => response.json())
+        .then(data => {
+            const statsContent = document.getElementById('stats-content');
+            const statsGraphs = document.getElementById('stats-graphs');
+
+            // Отображение базовой статистики
+            statsContent.innerHTML = `
+                <div class="stats-summary">
+                    <h3>Общая информация</h3>
+                    <p>Всего товаров: ${data.total_products}</p>
+                    <p>Средняя цена с Ozon Card: ${data.average_prices.card.toFixed(2)}₽</p>
+                    <p>Средняя цена со скидкой: ${data.average_prices.discount.toFixed(2)}₽</p>
+                    <p>Средняя обычная цена: ${data.average_prices.regular.toFixed(2)}₽</p>
+                </div>
+                <div class="price-trends">
+                    <h3>Тренды изменения цен</h3>
+                    ${Object.entries(data.price_trends).map(([product, trend]) => `
+                        <div class="trend-item">
+                            <h4>${product}</h4>
+                            <p>Изменение цены с Ozon Card: ${trend.card.toFixed(2)}%</p>
+                            <p>Изменение цены со скидкой: ${trend.discount.toFixed(2)}%</p>
+                            <p>Изменение обычной цены: ${trend.regular.toFixed(2)}%</p>
+                            <p>Период: ${trend.period.start} - ${trend.period.end}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            // Создание графика истории цен
+            fetch(`/get_stats_graph`)
+                .then(response => response.json())
+                .then(graphData => {
+                    if (graphData.success) {
+                        statsGraphs.innerHTML = `
+                            <h3>График изменения средних цен</h3>
+                            <img src="data:image/png;base64,${graphData.graph}" alt="График статистики">
+                        `;
+                    }
+                });
+        })
+        .catch(error => {
+            document.getElementById('stats-content').innerHTML = `Ошибка при загрузке статистики: ${error}`;
+        });
+}

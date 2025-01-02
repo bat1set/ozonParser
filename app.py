@@ -61,54 +61,51 @@ def product_page(name):
     if name not in main_data:
         return redirect(url_for('index'))
 
-    if name in main_data:
-        product_info = main_data[name]
-        price_history = price_data.get(name, {})
+    product_info = main_data[name]
+    price_history = price_data.get(name, {})
 
-        # Расчёт изменения цен
-        if price_history:
-            dates = sorted(price_history.keys())
-            if len(dates) >= 2:
-                latest = price_history[dates[-1]]
-                previous = price_history[dates[-2]]
+    changes = {'card': 0, 'discount': 0, 'regular': 0}
 
-                # Расчёт процентных изменений
-                changes = {
-                    'card': calculate_percentage_change(
-                        float(previous['price_card_ozon']),
-                        float(latest['price_card_ozon'])
-                    ),
-                    'discount': calculate_percentage_change(
-                        float(previous['price_discount']),
-                        float(latest['price_discount'])
-                    ),
-                    'regular': calculate_percentage_change(
-                        float(previous['price']),
-                        float(latest['price'])
-                    )
-                }
-            else:
-                changes = {'card': 0, 'discount': 0, 'regular': 0}
-        else:
-            changes = {'card': 0, 'discount': 0, 'regular': 0}
+    if price_history:
+        dates = sorted(price_history.keys())
+        if len(dates) >= 2:
+            latest = price_history[dates[-1]]
+            previous = price_history[dates[-2]]
 
-        return render_template('product.html',
-                               name=name,
-                               product=product_info,
-                               changes=changes)
-    return "Товар не найден", 404
+            # Calculate changes for each price type
+            changes = {
+                'card': calculate_percentage_change(
+                    previous['price_card_ozon'],
+                    latest['price_card_ozon']
+                ),
+                'discount': calculate_percentage_change(
+                    previous['price_discount'],
+                    latest['price_discount']
+                ),
+                'regular': calculate_percentage_change(
+                    previous['price'],
+                    latest['price']
+                )
+            }
+
+    return render_template('product.html',
+                           name=name,
+                           product=product_info,
+                           changes=changes)
+
 
 
 
 def calculate_percentage_change(old_value, new_value):
     try:
-        # Удаляем все не числовые символы и конвертируем в float
-        old_value = float(old_value.replace('\u2009', '').replace(' ', ''))
-        new_value = float(new_value.replace('\u2009', '').replace(' ', ''))
+
+        old_value = float(str(old_value).replace('\u2009', '').replace(' ', '').replace('₽', ''))
+        new_value = float(str(new_value).replace('\u2009', '').replace(' ', '').replace('₽', ''))
         if old_value == 0:
             return 0
         return ((new_value - old_value) / old_value) * 100
-    except (ValueError, AttributeError):
+    except (ValueError, AttributeError) as e:
+        print(f"Error converting price: {e}")  # Add logging
         return 0
 
 
@@ -210,26 +207,117 @@ def get_statistics():
 
     stats = {
         'total_products': len(main_data),
-        'price_changes': {},
-        'average_prices': {
-            'card': 0,
-            'discount': 0,
-            'regular': 0
-        }
+        'average_prices': calculate_average_prices(main_data),
+        'price_history': aggregate_price_history(price_data),
+        'price_trends': calculate_price_trends(price_data)
     }
-
-    # Вычисляем статистику
-    for name, product in main_data.items():
-        stats['average_prices']['card'] += float(product['price_card_ozon'].replace('\u2009', '').replace(' ', ''))
-        stats['average_prices']['discount'] += float(product['price_discount'].replace('\u2009', '').replace(' ', ''))
-        stats['average_prices']['regular'] += float(product['price'].replace('\u2009', '').replace(' ', ''))
-
-    if stats['total_products'] > 0:
-        for key in stats['average_prices']:
-            stats['average_prices'][key] /= stats['total_products']
 
     return jsonify(stats)
 
+
+def calculate_average_prices(main_data):
+    if not main_data:
+        return {'card': 0, 'discount': 0, 'regular': 0}
+
+    totals = {'card': 0, 'discount': 0, 'regular': 0}
+    for product in main_data.values():
+        totals['card'] += float(product['price_card_ozon'].replace('\u2009', '').replace(' ', '').replace('₽', ''))
+        totals['discount'] += float(product['price_discount'].replace('\u2009', '').replace(' ', '').replace('₽', ''))
+        totals['regular'] += float(product['price'].replace('\u2009', '').replace(' ', '').replace('₽', ''))
+
+    count = len(main_data)
+    return {k: v / count for k, v in totals.items()}
+
+
+def aggregate_price_history(price_data):
+    history = {}
+    for product, dates in price_data.items():
+        for date, prices in dates.items():
+            if date not in history:
+                history[date] = {
+                    'card': [],
+                    'discount': [],
+                    'regular': []
+                }
+            history[date]['card'].append(
+                float(prices['price_card_ozon'].replace('\u2009', '').replace(' ', '').replace('₽', '')))
+            history[date]['discount'].append(
+                float(prices['price_discount'].replace('\u2009', '').replace(' ', '').replace('₽', '')))
+            history[date]['regular'].append(
+                float(prices['price'].replace('\u2009', '').replace(' ', '').replace('₽', '')))
+
+    return history
+
+
+# File: app.py
+def calculate_price_trends(price_data):
+    trends = {}
+    for product, dates in price_data.items():
+        sorted_dates = sorted(dates.keys())
+        if len(sorted_dates) >= 2:
+            first_date = sorted_dates[0]
+            last_date = sorted_dates[-1]
+
+            first_prices = dates[first_date]
+            last_prices = dates[last_date]
+
+            trends[product] = {
+                'card': calculate_percentage_change(
+                    first_prices['price_card_ozon'],
+                    last_prices['price_card_ozon']
+                ),
+                'discount': calculate_percentage_change(
+                    first_prices['price_discount'],
+                    last_prices['price_discount']
+                ),
+                'regular': calculate_percentage_change(
+                    first_prices['price'],
+                    last_prices['price']
+                ),
+                'period': {
+                    'start': first_date,
+                    'end': last_date
+                }
+            }
+
+    return trends
+
+
+@app.route('/get_stats_graph')
+def get_stats_graph():
+    price_data = read_json(PRICE_DATA_PATH)
+    history = aggregate_price_history(price_data)
+
+    plt.figure(figsize=(12, 6))
+    dates = sorted(history.keys())
+
+    # Рассчитываем средние цены для каждой даты
+    avg_card = [sum(history[date]['card']) / len(history[date]['card']) if history[date]['card'] else 0 for date in
+                dates]
+    avg_discount = [sum(history[date]['discount']) / len(history[date]['discount']) if history[date]['discount'] else 0
+                    for date in dates]
+    avg_regular = [sum(history[date]['regular']) / len(history[date]['regular']) if history[date]['regular'] else 0 for
+                   date in dates]
+
+    plt.plot(dates, avg_card, label='Средняя цена с Ozon Card', marker='o')
+    plt.plot(dates, avg_discount, label='Средняя цена со скидкой', marker='s')
+    plt.plot(dates, avg_regular, label='Средняя обычная цена', marker='^')
+
+    plt.xticks(rotation=45)
+    plt.xlabel('Дата')
+    plt.ylabel('Цена (₽)')
+    plt.title('История средних цен всех товаров')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+
+    img = io.BytesIO()
+    plt.savefig(img, format='png', dpi=100, bbox_inches='tight')
+    img.seek(0)
+    plt.close()
+
+    graph_url = base64.b64encode(img.getvalue()).decode()
+    return jsonify({'success': True, 'graph': graph_url})
 
 if __name__ == '__main__':
     app.run(debug=True)
