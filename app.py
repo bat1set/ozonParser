@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for
 
 import os
 from main import product as fetch_product
@@ -58,6 +58,9 @@ def product_page(name):
     main_data = read_json(MAIN_DATA_PATH)
     price_data = read_json(PRICE_DATA_PATH)
 
+    if name not in main_data:
+        return redirect(url_for('index'))
+
     if name in main_data:
         product_info = main_data[name]
         price_history = price_data.get(name, {})
@@ -96,10 +99,17 @@ def product_page(name):
     return "Товар не найден", 404
 
 
+
 def calculate_percentage_change(old_value, new_value):
-    if old_value == 0:
+    try:
+        # Удаляем все не числовые символы и конвертируем в float
+        old_value = float(old_value.replace('\u2009', '').replace(' ', ''))
+        new_value = float(new_value.replace('\u2009', '').replace(' ', ''))
+        if old_value == 0:
+            return 0
+        return ((new_value - old_value) / old_value) * 100
+    except (ValueError, AttributeError):
         return 0
-    return ((new_value - old_value) / old_value) * 100
 
 
 @app.route('/update_product/<name>')
@@ -191,6 +201,34 @@ def update_all_products():
         }
         process_changes(formatted_data, MAIN_DATA_PATH, PRICE_DATA_PATH)
     return jsonify({'success': True})
+
+
+@app.route('/statistics')
+def get_statistics():
+    main_data = read_json(MAIN_DATA_PATH)
+    price_data = read_json(PRICE_DATA_PATH)
+
+    stats = {
+        'total_products': len(main_data),
+        'price_changes': {},
+        'average_prices': {
+            'card': 0,
+            'discount': 0,
+            'regular': 0
+        }
+    }
+
+    # Вычисляем статистику
+    for name, product in main_data.items():
+        stats['average_prices']['card'] += float(product['price_card_ozon'].replace('\u2009', '').replace(' ', ''))
+        stats['average_prices']['discount'] += float(product['price_discount'].replace('\u2009', '').replace(' ', ''))
+        stats['average_prices']['regular'] += float(product['price'].replace('\u2009', '').replace(' ', ''))
+
+    if stats['total_products'] > 0:
+        for key in stats['average_prices']:
+            stats['average_prices'][key] /= stats['total_products']
+
+    return jsonify(stats)
 
 
 if __name__ == '__main__':

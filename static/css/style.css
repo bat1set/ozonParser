@@ -202,39 +202,36 @@ button:hover {
 }
 
 .product-details {
-    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
 }
 
 .product-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 40px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 20px;
 }
 
 .product-info {
     display: grid;
-    grid-template-columns: 1fr 2fr;
-    gap: 20px;
-}
-
-.product-image {
-    max-width: 100%;
-    height: auto;
-    border-radius: 8px;
+    grid-template-columns: minmax(300px, 1fr) 2fr;
+    gap: 40px;
+    align-items: start;
 }
 
 .price-details {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 20px;
 }
 
 .price-item {
-    padding: 15px;
-    background-color: var(--secondary-color);
-    border-radius: 8px;
-    text-align: center;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .price-change {
@@ -259,6 +256,30 @@ button:hover {
     top: 10px;
     right: 10px;
     z-index: 2;
+}
+
+.delete-checkbox input[type="checkbox"] {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--primary-color);
+    border-radius: 50%;
+    cursor: pointer;
+    position: relative;
+}
+
+.delete-checkbox input[type="checkbox"]:checked {
+    background-color: var(--primary-color);
+}
+
+.delete-checkbox input[type="checkbox"]:checked::after {
+    content: '✓';
+    position: absolute;
+    color: white;
+    font-size: 14px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
 .hidden {
